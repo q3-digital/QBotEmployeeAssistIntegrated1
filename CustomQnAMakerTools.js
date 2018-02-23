@@ -1,5 +1,5 @@
 "use strict";
-
+var script = require('./BotScript');
 var builder = require("botbuilder");
 var CustomQnAMakerTools = (function () {
     function CustomQnAMakerTools() {
@@ -8,35 +8,43 @@ var CustomQnAMakerTools = (function () {
             function (session, args) {
                 var qnaMakerResult = args;
                 session.dialogData.qnaMakerResult = qnaMakerResult;
+				//console.log("qnaMakerResult is: ");
+				//console.log(qnaMakerResult);
                 var questionOptions = [];
                 qnaMakerResult.answers.forEach(function (qna) { questionOptions.push(qna.questions[0]); });
+				//questionOptions = questionOptions+"|Other";
                 var promptOptions = { listStyle: builder.ListStyle.button };
-				session.send('Please give me a moment to generate relevant queries to your interest.');
-                setTimeout(function(){builder.Prompts.choice(session, "Kindly select one of the following as per your curiosity.", questionOptions, promptOptions);}, 3*1000)
+				session.send('(idea)');
+                setTimeout(function(){builder.Prompts.choice(session, script.FAQChoice, questionOptions, promptOptions);}, 3*1000)
             },
             function (session, results) {
 				var dept = session.userData.selection;
-				console.log(dept);
+				//console.log(dept);
                 var qnaMakerResult = session.dialogData.qnaMakerResult;
-                var filteredResult = qnaMakerResult.answers.filter(function (qna) { return qna.questions[0] === results.response.entity; });
-                var selectedQnA = filteredResult[0];
-                setTimeout(function(){session.send(selectedQnA.answer);}, 3*1000)
+				var filteredResult = qnaMakerResult.answers.filter(function (qna) { return qna.questions[0] === results.response.entity; });
+				var selectedQnA = filteredResult[0];
+				//console.log("selectedQnA is: ");
+				//console.log(selectedQnA);
+				
+				
+				setTimeout(function(){session.send(selectedQnA.answer);}, 3*1000)
 				switch (dept) {
-            case 'Ask a Question for HR':
-				session.endDialog();
-				setTimeout(function(){session.beginDialog('HRFallback');},12*1000)
-				break;
-                //return session.beginDialog('hrqna');
-            case 'Ask a Question for PMO':
-				session.endDialog();
-				setTimeout(function(){session.beginDialog('PMOFallback');},12*1000)
-				break;
-                //return session.beginDialog('pmqna');
-        }
+					case 'Questions about HR Policies':
+						session.endDialog();
+						setTimeout(function(){session.beginDialog('HRFallback');},12*1000)
+						break;
+						//return session.beginDialog('hrqna');
+					case 'Questions about PMO Policies':
+						session.endDialog();
+						setTimeout(function(){session.beginDialog('PMOFallback');},12*1000)
+						break;
+						//return session.beginDialog('pmqna');
+				}
+				session.endDialogWithResult(selectedQnA);
+			}
+			
                 // The following ends the dialog and returns the selected response to the parent dialog, which logs the record in QnA Maker service
                 // You can simply end the dialog, in case you don't want to learn from these selections using session.endDialog()
-                session.endDialogWithResult(selectedQnA);
-            },
         ]);
     }
     CustomQnAMakerTools.prototype.createLibrary = function () {

@@ -9,6 +9,7 @@ var unique = require('array-unique');
 var path = require('path');
 var Excel = require('exceljs');
 var xlsx = require('xlsx');
+var script = require('./BotScript');
 
 module.exports = [
     function (session, args, next) {
@@ -31,21 +32,21 @@ module.exports = [
 					wb.xlsx.readFile(filename).then(function() {
 						var entity = entities[0];
 						for (j in values) {
-							console.log('in for loop values');
+							//console.log('in for loop values');
 							var category = entity.type;
 							var documentName = values[j];
 							
-							console.log('category: '+category);
-							console.log('documentName: '+documentName);		
+							//console.log('category: '+category);
+							//console.log('documentName: '+documentName);		
 							var sh = wb.getWorksheet(category);
 							if(sh != null) {
 								sh.eachRow(function(row, rowNumber) {
 									var rowvalue = typeof(row.getCell(1).value) === "string" ? row.getCell(1).value : row.getCell(1).value.text;
 									if (rowvalue.toLowerCase() == documentName.toLowerCase()) {
-										console.log("document located in excel successfully");
+										//console.log("document located in excel successfully");
 										var file_url = row.getCell(2).value.hyperlink ? row.getCell(2).value.hyperlink : row.getCell(2).value;
 										var file_type = row.getCell(3).value;
-										console.log('file_type:' + file_type);
+										//console.log('file_type:' + file_type);
 										var img_link = 'img/docicon.png';
 										switch (file_type) {
 											case "pdf":
@@ -64,10 +65,11 @@ module.exports = [
 												img_link = 'img/docicon.png';
 												break;
 										}
-									var file_link = "[![]("+img_link+")"+documentName+"]("+file_url+")";
+									//var file_link = "[![]("+img_link+")"+documentName+"]("+file_url+")";
+									var file_link = "[" + documentName + "](" + file_url + ")";
 									
 									docURL.push(file_link);
-									console.log('docURL: ' + docURL);
+									//console.log('docURL: ' + docURL);
 									}
 									
 								});	
@@ -85,19 +87,19 @@ module.exports = [
 							builder.Prompts.text(session, 'No matching document found. Please rephrase your required document search.');
 						}
 						
-						console.log('docURL: '+docURL);
+						//console.log('docURL: '+docURL);
 						var value = null;
 						var doc = session.dialogData.doc = {
 							value : docURL ? docURL : null
 						}
-						console.log('doc: '+doc);
+						//console.log('doc: '+doc);
 						/*if (!doc.value.length) {
 							session.send('Oops! No Matching document Found.');
 						} else {*/
 							next();
 						//}
 						isPromiseComplete = false;
-						console.log('isPromiseComplete? '+ isPromiseComplete)
+						//console.log('isPromiseComplete? '+ isPromiseComplete)
 						if(parseInt(j) === (values.length - 1)) {
 							clearInterval(interval);
 						}
@@ -115,21 +117,30 @@ module.exports = [
 		var doc = session.dialogData.doc;
         
         // Send confirmation to user
-		console.log('doc: ' + doc);
-		console.log(typeof(doc.value));
+		//console.log('doc: ' + doc);
+		//console.log(typeof(doc.value));
         
 		if (doc.value.length>1) {
 			var strmsg = doc.value.toString();
 			var finalmsg = strmsg.split(",").join("<br />");
-			session.send("You may select your required document from the following - "+"<br />"+finalmsg);
+			//session.send("(idea)");
+			setTimeout(function(){session.send(script.DocSearchLinks + "<br />"+finalmsg);}, 3*1000);
 			//session.endDialog();
 		}
 		else if (doc.value.length==1) {
-			session.send("You have selected" + "<br />" + "<br />" + doc.value.toString());
+			//session.send("(idea)");
+			setTimeout(function(){session.send(script.DocSearchResult + "<br />" + "<br />" + doc.value.toString());}, 3*1000);
 			//session.endDialog();
 		}
-		session.endDialog();
+		//setTimeout(function(){session.endDialog();}, 5*1000);
+		next();		
+	},
+	function (session, next)
+	{
+		//session.endDialog();
+		setTimeout(function(){session.endDialog();},4*1000);
 		setTimeout(function(){session.beginDialog('DocSearchFallback');}, 5*1000);
 		
+		//setTimeout(function(){session.beginDialog('DocSearchFallback');}, 8*1000);
 	}
 	]
